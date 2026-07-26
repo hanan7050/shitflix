@@ -8,7 +8,7 @@ import '../styles/VideoPlayer.css';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'https://shitflix-backend.onrender.com';
 
-export function createVideoPlayer(mediaId, mediaType, tmdbTitle = null, initialSeason = null, initialEpisode = null) {
+export function createVideoPlayer(mediaId, mediaType, title, season = null, episode = null) {
 
   // ── DOM Skeleton ──────────────────────────────────────────
   const page = document.createElement('div');
