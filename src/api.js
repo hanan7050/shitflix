@@ -35,7 +35,8 @@ export function hasApiKey() {
 }
 
 export async function getMapping(tmdbId, mediaType) {
-  const res = await fetch(`http://localhost:3000/api/mapping/${mediaType}/${tmdbId}`);
+  const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+  const res = await fetch(`${API_BASE_URL}/api/mapping/${mediaType}/${tmdbId}`);
   if (!res.ok) return null;
   return res.json();
 }
@@ -157,7 +158,8 @@ export async function getSouthIndianMovies() {
  */
 export async function getCatalogIdSet() {
   try {
-    const res = await fetch('http://localhost:3000/api/catalog/ids');
+    const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+    const res = await fetch(`${API_BASE_URL}/api/catalog/ids`);
     if (!res.ok) return new Set();
     const data = await res.json();
     return new Set((data.ids || []).map(e => `${e.type}:${e.id}`));
