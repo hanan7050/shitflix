@@ -11,17 +11,40 @@ require('dotenv').config();
 const app = express();
 app.use(cors());
 
+// Capture logs
+global.logBuffer = [];
+const originalLog = console.log;
+const originalError = console.error;
+console.log = function(...args) {
+  originalLog.apply(console, args);
+  global.logBuffer.push({ type: 'log', time: new Date().toISOString(), message: args.join(' ') });
+  if (global.logBuffer.length > 100) global.logBuffer.shift();
+};
+console.error = function(...args) {
+  originalError.apply(console, args);
+  global.logBuffer.push({ type: 'error', time: new Date().toISOString(), message: args.join(' ') });
+  if (global.logBuffer.length > 100) global.logBuffer.shift();
+};
+
 // Status route for debugging
 app.get('/api/status', async (req, res) => {
   try {
     if (!client) {
       return res.status(500).json({ status: 'error', message: 'Client not initialized' });
     }
+    console.log("[Status API] Calling getMe...");
     const me = await client.getMe();
+    console.log("[Status API] getMe success");
     res.json({ status: 'ok', user: me.username || me.firstName });
   } catch (error) {
+    console.log("[Status API] Error:", error.message);
     res.status(500).json({ status: 'error', message: error.message || String(error) });
   }
+});
+
+// Logs route for debugging Render remotely
+app.get('/api/logs', (req, res) => {
+  res.json({ logs: global.logBuffer || [] });
 });
 
 app.get('/', (req, res) => {
