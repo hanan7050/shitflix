@@ -306,8 +306,11 @@ app.get('/api/transcode/:mediaType/:tmdbId', (req, res) => {
 
   let ffmpegArgs = [];
   
+  // Fast input seek (will read sequentially without HTTP Range requests 
+  // because Range requests trigger multiple slow MTProto DC handshakes)
+  ffmpegArgs.push('-seekable', '0');
+  
   if (start > 0) {
-    // Fast input seek
     ffmpegArgs.push('-ss', start.toString());
   }
   
@@ -320,8 +323,6 @@ app.get('/api/transcode/:mediaType/:tmdbId', (req, res) => {
       '-c:v', 'copy',
       '-c:a', 'aac',
       '-b:a', '128k',
-      '-copyts', // Preserve original timestamps for seek offset
-      '-avoid_negative_ts', 'disabled',
       '-f', 'mp4',
       '-movflags', 'frag_keyframe+empty_moov+default_base_moof',
       'pipe:1'
@@ -335,8 +336,6 @@ app.get('/api/transcode/:mediaType/:tmdbId', (req, res) => {
       '-c:a', 'aac',
       '-ac', '2',
       '-b:a', '256k',
-      '-copyts',
-      '-avoid_negative_ts', 'disabled',
       '-movflags', 'frag_keyframe+empty_moov+default_base_moof',
       '-f', 'mp4',
       'pipe:1'

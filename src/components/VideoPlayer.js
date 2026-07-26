@@ -63,6 +63,8 @@ export function createVideoPlayer(mediaId, mediaType, title, season = null, epis
   let uiTimer = null;
   let isDragging = false;
   let settingsOpen = false;
+  let muted = false;
+  let transcodeOffset = 0;
 
   // ── Codec helpers ─────────────────────────────────────────
   const canPlayDolbyNative = (codec) => {
@@ -82,6 +84,14 @@ export function createVideoPlayer(mediaId, mediaType, title, season = null, epis
     if (endpoint === 'transcode' && startTime > 0) url += `&start=${startTime}`;
     if (mediaType === 'tv' && season && episode) url += `&season=${season}&episode=${episode}`;
     return url;
+  };
+
+  const getCurrentTime = () => {
+    if (!art) return 0;
+    if (getStreamUrl().includes('transcode')) {
+      return (art.currentTime || 0) + transcodeOffset;
+    }
+    return art.currentTime || 0;
   };
 
   // ── Helpers ───────────────────────────────────────────────
@@ -268,7 +278,6 @@ export function createVideoPlayer(mediaId, mediaType, title, season = null, epis
   };
 
   // ── Volume ────────────────────────────────────────────────
-  let muted = false;
   const syncVolIcon = () => {
     const v = parseFloat(nfVolSlider.value);
     if (muted || v === 0) {
@@ -314,10 +323,10 @@ export function createVideoPlayer(mediaId, mediaType, title, season = null, epis
   document.addEventListener('fullscreenchange', syncFsIcon);
   document.addEventListener('webkitfullscreenchange', syncFsIcon);
 
-  // ── Timeline update ───────────────────────────────────────
+  // ── Sync UI ───────────────────────────────────────────────
   const updateTimeline = () => {
-    if (!art) return;
-    const curr = art.currentTime || 0;
+    if (isDragging || !art) return;
+    const curr = getCurrentTime();
     const dur = realDuration || art.duration || 0;
     const pct = dur > 0 ? (curr / dur) * 100 : 0;
     nfProgress.style.width = `${pct}%`;
@@ -338,6 +347,7 @@ export function createVideoPlayer(mediaId, mediaType, title, season = null, epis
     if (!art) return;
     if (getStreamUrl().includes('transcode')) {
       loading.style.display = 'flex';
+      transcodeOffset = targetTime;
       art.switchUrl(getStreamUrl(targetTime));
       art.once('video:canplay', () => {
         loading.style.display = 'none';
@@ -393,7 +403,7 @@ export function createVideoPlayer(mediaId, mediaType, title, season = null, epis
   const seekBy = (amount) => {
     if (!art) return;
     const dur = realDuration || art.duration || 0;
-    const target = Math.max(0, Math.min(dur, (art.currentTime || 0) + amount));
+    const target = Math.max(0, Math.min(dur, getCurrentTime() + amount));
     performSeek(target);
     flashSeek(amount > 0 ? 'right' : 'left');
     showUI();
@@ -460,7 +470,7 @@ export function createVideoPlayer(mediaId, mediaType, title, season = null, epis
         btn.addEventListener('click', () => {
           selectedAudioTrack = track.index;
           forceTranscode = true;
-          const ct = art ? art.currentTime : 0;
+          const ct = getCurrentTime();
           art.switchUrl(getStreamUrl(ct));
           closeSettings();
           art.play();
