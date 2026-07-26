@@ -26,200 +26,124 @@ console.error = function(...args) {
   if (global.logBuffer.length > 100) global.logBuffer.shift();
 };
 
-// Status route for debugging
-app.get('/api/status', async (req, res) => {
-  try {
-    if (!client) {
-      return res.status(500).json({ status: 'error', message: 'Client not initialized' });
-    }
-    console.log("[Status API] Calling getMe...");
-    const me = await client.getMe();
-    console.log("[Status API] getMe success");
-    res.json({ status: 'ok', user: me.username || me.firstName });
-  } catch (error) {
-    console.log("[Status API] Error:", error.message);
-    res.status(500).json({ status: 'error', message: error.message || String(error) });
-  }
-});
-
-// Logs route for debugging Render remotely
-app.get('/api/logs', (req, res) => {
-  res.json({ logs: global.logBuffer || [] });
-});
-
-app.get('/', (req, res) => {
-  res.send('Shitflix API is running!');
-});
-
 const apiId = parseInt(process.env.TELEGRAM_API_ID);
 const apiHash = process.env.TELEGRAM_API_HASH;
-const stringSession = new StringSession(process.env.TELEGRAM_SESSION);
+const stringSession = new StringSession(process.env.TELEGRAM_SESSION || '');
 
 let client;
+let isInitializing = false;
+let clientReady = false;
+let initPromise = null;
 
 async function initTelegram() {
-  console.log("Connecting to Telegram...");
-  try {
+  if (clientReady) return;
+  if (isInitializing) {
+    if (initPromise) await initPromise;
+    return;
+  }
+  
+  isInitializing = true;
+  initPromise = (async () => {
+    console.log("Connecting to Telegram...");
     client = new TelegramClient(stringSession, apiId, apiHash, {
       connectionRetries: 5,
     });
     await client.connect();
+    clientReady = true;
     console.log("✅ Connected to Telegram MTProto!");
-  } catch (error) {
-    console.error("❌ Failed to connect to Telegram MTProto:", error.message || error);
-    if (error.errorMessage === 'AUTH_KEY_DUPLICATED' || String(error).includes('AUTH_KEY_DUPLICATED')) {
-      console.log("⚠️ Auth key duplicated. This happens during Render zero-downtime deploys. Retrying in 10 seconds...");
-      
-      // CRITICAL: We MUST disconnect the failed client to kill the zombie socket!
-      // Otherwise, Telegram still thinks this socket is holding the connection!
-      try {
-        if (client) {
-          await client.disconnect();
-          console.log("🧹 Cleaned up zombie socket.");
-        }
-      } catch (e) {
-        console.log("Error cleaning up socket:", e.message);
+  })();
+  
+  await initPromise;
+  isInitializing = false;
+}
+
+// Log endpoint for frontend debugging
+app.get('/api/logs', (req, res) => {
+  res.json({ logs: global.logBuffer });
+});
+
+// Helper for mapping
+function getMediaInfo(mediaType, tmdbId) {
+  const mappings = JSON.parse(fs.readFileSync('./mappings.json', 'utf8'));
+  return mappings[mediaType] && mappings[mediaType][tmdbId];
+}
+
+// ffprobe cache to prevent spamming Telegram and ffprobe
+global.probeCache = new Map();
+global.probeLock = new Map();
+
+async function getFfprobeData(streamUrl, cacheKey) {
+  // If it's cached, return it instantly
+  if (global.probeCache.has(cacheKey)) {
+    console.log(`[FFPROBE CACHE HIT] Returned cached metadata for ${cacheKey}`);
+    return global.probeCache.get(cacheKey);
+  }
+
+  // If another request is currently probing this stream, wait for it instead of spawning again
+  if (global.probeLock.has(cacheKey)) {
+    console.log(`[FFPROBE LOCK] Waiting for existing probe to finish for ${cacheKey}`);
+    return await global.probeLock.get(cacheKey);
+  }
+
+  // Create a new promise for this probe and store it in the lock
+  const probePromise = new Promise((resolve, reject) => {
+    console.log(`[FFPROBE] Probing stream to find audio/subtitle tracks...`);
+    execFile(ffprobePath, [
+      '-v', 'quiet',
+      '-print_format', 'json',
+      '-show_streams',
+      streamUrl
+    ], (error, stdout, stderr) => {
+      if (error) {
+        console.error(`[FFPROBE ERROR] ${error.message}`);
+        return reject(error);
       }
       
-      setTimeout(initTelegram, 10000);
-    }
+      try {
+        const metadata = JSON.parse(stdout);
+        const data = {
+          audioTracks: metadata.streams
+            .filter(s => s.codec_type === 'audio')
+            .map(s => ({
+              index: s.index,
+              codec: s.codec_name,
+              language: s.tags?.language || 'und',
+              title: s.tags?.title || `Audio ${s.index}`,
+              channels: s.channels
+            })),
+          subtitleTracks: metadata.streams
+            .filter(s => s.codec_type === 'subtitle')
+            .map(s => ({
+              index: s.index,
+              codec: s.codec_name,
+              language: s.tags?.language || 'und',
+              title: s.tags?.title || `Subtitle ${s.index}`
+            }))
+        };
+        
+        // Save to cache
+        global.probeCache.set(cacheKey, data);
+        resolve(data);
+      } catch (parseErr) {
+        console.error(`[FFPROBE PARSE ERROR]`, parseErr);
+        reject(parseErr);
+      }
+    });
+  });
+
+  global.probeLock.set(cacheKey, probePromise);
+  
+  try {
+    const result = await probePromise;
+    return result;
+  } finally {
+    global.probeLock.delete(cacheKey); // Clean up lock
   }
 }
 
-app.get('/', (req, res) => {
-  res.send('Shitflix Backend is awake! 🚀');
-});
-
-app.get('/api/catalog', (req, res) => {
-  try {
-    const mappings = JSON.parse(fs.readFileSync('./mappings.json', 'utf8'));
-    
-    // Convert mapping object to an array for the frontend
-    const movies = Object.keys(mappings.movie || {}).map(tmdbId => ({
-      id: tmdbId,
-      media_type: 'movie',
-      ...mappings.movie[tmdbId]
-    }));
-    
-    const tvShows = Object.keys(mappings.tv || {}).map(tmdbId => ({
-      id: tmdbId,
-      media_type: 'tv',
-      ...mappings.tv[tmdbId]
-    }));
-    
-    // Combine and reverse so newest additions are at the top
-    const allMedia = [...movies, ...tvShows].reverse();
-    
-    res.json({ results: allMedia });
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to read catalog.' });
-  }
-});
-
-// Returns all mapped TMDB IDs — used by frontend to filter TMDB results
-// against the local Telegram library without making N individual /mapping calls
-app.get('/api/catalog/ids', (req, res) => {
-  try {
-    const mappings = JSON.parse(fs.readFileSync('./mappings.json', 'utf8'));
-    const movieIds = Object.keys(mappings.movie || {}).map(id => ({ id: String(id), type: 'movie' }));
-    const tvIds    = Object.keys(mappings.tv    || {}).map(id => ({ id: String(id), type: 'tv' }));
-    res.json({ ids: [...movieIds, ...tvIds] });
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to read catalog.' });
-  }
-});
-
-
-app.get('/api/mapping/:mediaType/:tmdbId', (req, res) => {
-  try {
-    const { mediaType, tmdbId } = req.params;
-    const mappings = JSON.parse(fs.readFileSync('./mappings.json', 'utf8'));
-    const mapping = mappings[mediaType] && mappings[mediaType][tmdbId];
-    if (mapping) {
-      res.json(mapping);
-    } else {
-      res.status(404).json({ error: 'Mapping not found' });
-    }
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to read catalog.' });
-  }
-});
-
-const probeCache = {};
-
-app.get('/api/probe/:mediaType/:tmdbId', (req, res) => {
+app.get('/api/metadata/:mediaType/:tmdbId', async (req, res) => {
   const { mediaType, tmdbId } = req.params;
   const sourceIndex = req.query.sourceIndex || 0;
-  const season = req.query.season;
-  const episode = req.query.episode;
-  
-  const cacheKey = `${mediaType}_${tmdbId}_${season || ''}_${episode || ''}_${sourceIndex}`;
-  if (probeCache[cacheKey]) {
-    return res.json(probeCache[cacheKey]);
-  }
-  
-  // We use the local raw stream URL as the input for ffprobe
-  const PORT = process.env.PORT || 3000;
-  let streamUrl = `http://127.0.0.1:${PORT}/api/stream/${mediaType}/${tmdbId}?sourceIndex=${sourceIndex}`;
-  if (mediaType === 'tv' && season && episode) {
-    streamUrl += `&season=${season}&episode=${episode}`;
-  }
-  
-  execFile(ffprobePath, [
-    '-v', 'quiet',
-    '-print_format', 'json',
-    '-show_streams',
-    '-show_format',
-    streamUrl
-  ], (error, stdout, stderr) => {
-    if (error) {
-      console.error('ffprobe error:', error);
-      return res.status(500).json({ error: 'Failed to probe file.' });
-    }
-    
-    try {
-      const data = JSON.parse(stdout);
-      const audioStreams = data.streams ? data.streams.filter(s => s.codec_type === 'audio') : [];
-      const subtitleStreams = data.streams ? data.streams.filter(s => s.codec_type === 'subtitle') : [];
-      
-      const tracks = audioStreams.map((stream, index) => {
-        const lang = (stream.tags && stream.tags.language) ? stream.tags.language : 'Unknown';
-        const title = (stream.tags && stream.tags.title) ? stream.tags.title : `Track ${index + 1}`;
-        return {
-          index: index,
-          language: lang,
-          title: title,
-          codec: stream.codec_name
-        };
-      });
-      
-      const subtitles = subtitleStreams.map((stream, index) => {
-        const lang = (stream.tags && stream.tags.language) ? stream.tags.language : 'Unknown';
-        const title = (stream.tags && stream.tags.title) ? stream.tags.title : `Subtitle ${index + 1}`;
-        return {
-          index: index,
-          language: lang,
-          title: title,
-          codec: stream.codec_name
-        };
-      });
-      
-      const duration = data.format && data.format.duration ? parseFloat(data.format.duration) : null;
-      
-      const result = { tracks, subtitles, duration };
-      probeCache[cacheKey] = result;
-      res.json(result);
-    } catch (e) {
-      res.status(500).json({ error: 'Failed to parse ffprobe output.' });
-    }
-  });
-});
-
-app.get('/api/audio/:mediaType/:tmdbId', (req, res) => {
-  const { mediaType, tmdbId } = req.params;
-  const sourceIndex = req.query.sourceIndex || 0;
-  const audioTrack = req.query.audioTrack || 0;
-  const start = parseFloat(req.query.start) || 0;
   const season = req.query.season;
   const episode = req.query.episode;
   
@@ -228,37 +152,29 @@ app.get('/api/audio/:mediaType/:tmdbId', (req, res) => {
   if (mediaType === 'tv' && season && episode) {
     streamUrl += `&season=${season}&episode=${episode}`;
   }
+
+  // Generate a unique cache key for this specific video file
+  const cacheKey = `${mediaType}_${tmdbId}_${season || '0'}_${episode || '0'}_${sourceIndex}`;
   
-  let ffmpegArgs = [];
-  if (start > 0) {
-    ffmpegArgs.push('-ss', start.toString());
+  try {
+    const data = await getFfprobeData(streamUrl, cacheKey);
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to probe media' });
   }
-  
-  ffmpegArgs.push(
-    '-i', streamUrl,
-    '-map', `0:a:${audioTrack}`,
-    '-c:a', 'aac',
-    '-b:a', '128k',
-    '-f', 'adts',
-    'pipe:1'
-  );
-  
-  res.setHeader('Content-Type', 'audio/aac');
-  const ffmpegProcess = spawn(ffmpegPath, ffmpegArgs);
-  ffmpegProcess.stdout.pipe(res);
-  
-  req.on('close', () => {
-    ffmpegProcess.kill('SIGKILL');
-  });
 });
 
 app.get('/api/subtitle/:mediaType/:tmdbId', (req, res) => {
   const { mediaType, tmdbId } = req.params;
   const sourceIndex = req.query.sourceIndex || 0;
-  const trackIndex = req.query.trackIndex || 0;
+  const trackIndex = req.query.trackIndex;
   const season = req.query.season;
   const episode = req.query.episode;
   
+  if (!trackIndex) {
+    return res.status(400).send('trackIndex is required');
+  }
+
   const PORT = process.env.PORT || 3000;
   let streamUrl = `http://127.0.0.1:${PORT}/api/stream/${mediaType}/${tmdbId}?sourceIndex=${sourceIndex}`;
   if (mediaType === 'tv' && season && episode) {
@@ -395,17 +311,27 @@ app.get('/api/stream/:mediaType/:tmdbId', async (req, res) => {
   const { channel, messageId } = source;
 
   try {
-    // 2. Fetch the message from Telegram
-    console.log(`[Stream API] Fetching message ID ${messageId} from channel ${channel}`);
-    // Using BigInt for channel and array for ids to ensure GramJS resolves it correctly
-    const messages = await client.getMessages(BigInt(channel), { ids: [Number(messageId)] });
-    console.log(`[Stream API] Fetched messages! Result length: ${messages ? messages.length : 0}`);
-    if (!messages || messages.length === 0 || !messages[0] || !messages[0].media) {
-      console.log(`[Stream API] Message not found or no media.`);
-      return res.status(404).json({ error: 'File not found on Telegram.' });
+    // 2. Fetch or retrieve the cached message from Telegram
+    const cacheKey = `${channel}_${messageId}`;
+    let media = global.mediaCache ? global.mediaCache.get(cacheKey) : null;
+    
+    if (!global.mediaCache) {
+      global.mediaCache = new Map();
     }
 
-    const document = messages[0].media.document;
+    if (!media) {
+      console.log(`[Stream API] Fetching message ID ${messageId} from channel ${channel}`);
+      const messages = await client.getMessages(BigInt(channel), { ids: [Number(messageId)] });
+      console.log(`[Stream API] Fetched messages! Result length: ${messages ? messages.length : 0}`);
+      if (!messages || messages.length === 0 || !messages[0] || !messages[0].media) {
+        console.log(`[Stream API] Message not found or no media.`);
+        return res.status(404).json({ error: 'File not found on Telegram.' });
+      }
+      media = messages[0].media;
+      global.mediaCache.set(cacheKey, media);
+    }
+
+    const document = media.document;
     if (!document) {
       return res.status(400).json({ error: 'Message does not contain a video document.' });
     }
@@ -433,7 +359,10 @@ app.get('/api/stream/:mediaType/:tmdbId', async (req, res) => {
       // Just stream the whole thing if no range (not recommended, but standard fallback)
       let requestClosedFull = false;
       req.on('close', () => { requestClosedFull = true; });
-      const iterator = client.iterDownload({ file: messages[0].media });
+      const iterator = client.iterDownload({ 
+        file: media,
+        requestSize: 1048576
+      });
       for await (const chunk of iterator) {
         if (requestClosedFull) {
           console.log(`[Stream API] Request closed by client (full stream), aborting download.`);
@@ -462,8 +391,9 @@ app.get('/api/stream/:mediaType/:tmdbId', async (req, res) => {
     // 4. Stream exactly the requested chunk from Telegram
     // We use a manual offset down to the exact byte requested
     const iterator = client.iterDownload({
-      file: messages[0].media,
+      file: media,
       offset: bigInt(start),
+      requestSize: 1048576
     });
 
     let requestClosed = false;
