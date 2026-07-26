@@ -62,6 +62,36 @@ app.get('/api/logs', (req, res) => {
   res.json({ logs: global.logBuffer });
 });
 
+app.get('/', (req, res) => {
+  res.send('Shitflix Backend is awake! 🚀');
+});
+
+app.get('/api/catalog', (req, res) => {
+  try {
+    const mappings = JSON.parse(fs.readFileSync('./mappings.json', 'utf8'));
+    
+    // Convert mapping object to an array for the frontend
+    const movies = Object.keys(mappings.movie || {}).map(tmdbId => ({
+      id: tmdbId,
+      media_type: 'movie',
+      ...mappings.movie[tmdbId]
+    }));
+    
+    const tvShows = Object.keys(mappings.tv || {}).map(tmdbId => ({
+      id: tmdbId,
+      media_type: 'tv',
+      ...mappings.tv[tmdbId]
+    }));
+    
+    // Combine and reverse so newest additions are at the top
+    const allMedia = [...movies, ...tvShows].reverse();
+    
+    res.json({ results: allMedia });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to read catalog' });
+  }
+});
+
 // Helper for mapping
 function getMediaInfo(mediaType, tmdbId) {
   const mappings = JSON.parse(fs.readFileSync('./mappings.json', 'utf8'));
