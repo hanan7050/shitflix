@@ -30,6 +30,10 @@ async function initTelegram() {
   console.log("✅ Connected to Telegram MTProto!");
 }
 
+app.get('/', (req, res) => {
+  res.send('Shitflix Backend is awake! 🚀');
+});
+
 app.get('/api/catalog', (req, res) => {
   try {
     const mappings = JSON.parse(fs.readFileSync('./mappings.json', 'utf8'));
