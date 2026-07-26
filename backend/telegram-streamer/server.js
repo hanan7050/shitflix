@@ -23,11 +23,15 @@ let client;
 
 async function initTelegram() {
   console.log("Connecting to Telegram...");
-  client = new TelegramClient(stringSession, apiId, apiHash, {
-    connectionRetries: 5,
-  });
-  await client.connect();
-  console.log("✅ Connected to Telegram MTProto!");
+  try {
+    client = new TelegramClient(stringSession, apiId, apiHash, {
+      connectionRetries: 5,
+    });
+    await client.connect();
+    console.log("✅ Connected to Telegram MTProto!");
+  } catch (error) {
+    console.error("❌ Failed to connect to Telegram MTProto:", error);
+  }
 }
 
 app.get('/', (req, res) => {
