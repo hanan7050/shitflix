@@ -145,11 +145,18 @@ app.get('/api/mapping/:mediaType/:tmdbId', (req, res) => {
   }
 });
 
+const probeCache = {};
+
 app.get('/api/probe/:mediaType/:tmdbId', (req, res) => {
   const { mediaType, tmdbId } = req.params;
   const sourceIndex = req.query.sourceIndex || 0;
   const season = req.query.season;
   const episode = req.query.episode;
+  
+  const cacheKey = `${mediaType}_${tmdbId}_${season || ''}_${episode || ''}_${sourceIndex}`;
+  if (probeCache[cacheKey]) {
+    return res.json(probeCache[cacheKey]);
+  }
   
   // We use the local raw stream URL as the input for ffprobe
   const PORT = process.env.PORT || 3000;
@@ -199,7 +206,9 @@ app.get('/api/probe/:mediaType/:tmdbId', (req, res) => {
       
       const duration = data.format && data.format.duration ? parseFloat(data.format.duration) : null;
       
-      res.json({ tracks, subtitles, duration });
+      const result = { tracks, subtitles, duration };
+      probeCache[cacheKey] = result;
+      res.json(result);
     } catch (e) {
       res.status(500).json({ error: 'Failed to parse ffprobe output.' });
     }
@@ -305,10 +314,6 @@ app.get('/api/transcode/:mediaType/:tmdbId', (req, res) => {
   const isMKV = filename.toLowerCase().endsWith('.mkv');
 
   let ffmpegArgs = [];
-  
-  // Fast input seek (will read sequentially without HTTP Range requests 
-  // because Range requests trigger multiple slow MTProto DC handshakes)
-  ffmpegArgs.push('-seekable', '0');
   
   if (start > 0) {
     ffmpegArgs.push('-ss', start.toString());

@@ -597,7 +597,7 @@ export function createVideoPlayer(mediaId, mediaType, title, season = null, epis
     let url = `${API_BASE}/api/probe/${mediaType}/${mediaId}?sourceIndex=${selectedSourceIndex}`;
     if (mediaType === 'tv' && season && episode) url += `&season=${season}&episode=${episode}`;
 
-    fetch(url)
+    return fetch(url)
       .then(r => r.json())
       .then(data => {
         if (data && data.duration) realDuration = data.duration;
@@ -614,7 +614,6 @@ export function createVideoPlayer(mediaId, mediaType, title, season = null, epis
             const codec = (cur.codec || '').toLowerCase();
             if (['ac3', 'eac3', 'dts', 'truehd'].includes(codec) && !canPlayDolbyNative(codec)) {
               forceTranscode = true;
-              if (art) art.switchUrl(getStreamUrl(art.currentTime || 0));
             }
           }
           if (settingsOpen) buildSettings();
@@ -711,12 +710,14 @@ export function createVideoPlayer(mediaId, mediaType, title, season = null, epis
       if (mapping && mapping.sources && mapping.sources.length > 0) {
         sourcesList = mapping.sources;
       }
-      initStream();
-      fetchAudioTracks();
+      fetchAudioTracks().then(() => {
+        initStream();
+      });
     })
     .catch(() => {
-      initStream();
-      fetchAudioTracks();
+      fetchAudioTracks().then(() => {
+        initStream();
+      });
     });
 
   // ── Cleanup ───────────────────────────────────────────────
