@@ -11,6 +11,10 @@ require('dotenv').config();
 const app = express();
 app.use(cors());
 
+app.get('/', (req, res) => {
+  res.send('Shitflix API is running!');
+});
+
 const apiId = parseInt(process.env.TELEGRAM_API_ID);
 const apiHash = process.env.TELEGRAM_API_HASH;
 const stringSession = new StringSession(process.env.TELEGRAM_SESSION);
