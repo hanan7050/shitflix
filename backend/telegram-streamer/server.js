@@ -66,6 +66,17 @@ app.get('/', (req, res) => {
   res.send('Shitflix Backend is awake! 🚀');
 });
 
+app.get('/api/catalog/ids', (req, res) => {
+  try {
+    const mappings = JSON.parse(fs.readFileSync('./mappings.json', 'utf8'));
+    const movieIds = Object.keys(mappings.movie || {}).map(id => ({ id: String(id), type: 'movie' }));
+    const tvIds    = Object.keys(mappings.tv    || {}).map(id => ({ id: String(id), type: 'tv' }));
+    res.json({ ids: [...movieIds, ...tvIds] });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to read catalog.' });
+  }
+});
+
 app.get('/api/catalog', (req, res) => {
   try {
     const mappings = JSON.parse(fs.readFileSync('./mappings.json', 'utf8'));
@@ -171,7 +182,7 @@ async function getFfprobeData(streamUrl, cacheKey) {
   }
 }
 
-app.get('/api/metadata/:mediaType/:tmdbId', async (req, res) => {
+app.get('/api/probe/:mediaType/:tmdbId', async (req, res) => {
   const { mediaType, tmdbId } = req.params;
   const sourceIndex = req.query.sourceIndex || 0;
   const season = req.query.season;
