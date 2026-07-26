@@ -11,6 +11,19 @@ require('dotenv').config();
 const app = express();
 app.use(cors());
 
+// Status route for debugging
+app.get('/api/status', async (req, res) => {
+  try {
+    if (!client) {
+      return res.status(500).json({ status: 'error', message: 'Client not initialized' });
+    }
+    const me = await client.getMe();
+    res.json({ status: 'ok', user: me.username || me.firstName });
+  } catch (error) {
+    res.status(500).json({ status: 'error', message: error.message || String(error) });
+  }
+});
+
 app.get('/', (req, res) => {
   res.send('Shitflix API is running!');
 });
