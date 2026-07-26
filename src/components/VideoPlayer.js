@@ -300,7 +300,7 @@ export function createVideoPlayer(mediaId, mediaType, title, season = null, epis
   };
 
   const toggleFs = () => {
-    const el = container;
+    const el = page;
     if (!document.fullscreenElement && !document.webkitFullscreenElement) {
       (el.requestFullscreen || el.webkitRequestFullscreen).call(el);
     } else {
