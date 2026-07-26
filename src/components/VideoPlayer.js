@@ -602,12 +602,12 @@ export function createVideoPlayer(mediaId, mediaType, title, season = null, epis
       .then(data => {
         if (data && data.duration) realDuration = data.duration;
 
-        if (data && data.subtitles) {
-          subtitleTracks = data.subtitles;
+        if (data && data.subtitleTracks) {
+          subtitleTracks = data.subtitleTracks;
         }
 
-        if (data && data.tracks) {
-          audioTracks = data.tracks;
+        if (data && data.audioTracks) {
+          audioTracks = data.audioTracks;
 
           const cur = audioTracks.find(t => t.index === selectedAudioTrack);
           if (cur && !forceTranscode && !isMKV()) {
