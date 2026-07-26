@@ -152,7 +152,8 @@ app.get('/api/probe/:mediaType/:tmdbId', (req, res) => {
   const episode = req.query.episode;
   
   // We use the local raw stream URL as the input for ffprobe
-  let streamUrl = `http://localhost:3000/api/stream/${mediaType}/${tmdbId}?sourceIndex=${sourceIndex}`;
+  const PORT = process.env.PORT || 3000;
+  let streamUrl = `http://localhost:${PORT}/api/stream/${mediaType}/${tmdbId}?sourceIndex=${sourceIndex}`;
   if (mediaType === 'tv' && season && episode) {
     streamUrl += `&season=${season}&episode=${episode}`;
   }
@@ -213,7 +214,8 @@ app.get('/api/audio/:mediaType/:tmdbId', (req, res) => {
   const season = req.query.season;
   const episode = req.query.episode;
   
-  let streamUrl = `http://localhost:3000/api/stream/${mediaType}/${tmdbId}?sourceIndex=${sourceIndex}`;
+  const PORT = process.env.PORT || 3000;
+  let streamUrl = `http://localhost:${PORT}/api/stream/${mediaType}/${tmdbId}?sourceIndex=${sourceIndex}`;
   if (mediaType === 'tv' && season && episode) {
     streamUrl += `&season=${season}&episode=${episode}`;
   }
@@ -249,7 +251,8 @@ app.get('/api/transcode/:mediaType/:tmdbId', (req, res) => {
   const season = req.query.season;
   const episode = req.query.episode;
   
-  let streamUrl = `http://localhost:3000/api/stream/${mediaType}/${tmdbId}?sourceIndex=${sourceIndex}`;
+  const PORT = process.env.PORT || 3000;
+  let streamUrl = `http://localhost:${PORT}/api/stream/${mediaType}/${tmdbId}?sourceIndex=${sourceIndex}`;
   if (mediaType === 'tv' && season && episode) {
     streamUrl += `&season=${season}&episode=${episode}`;
   }
