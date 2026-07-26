@@ -4,6 +4,7 @@
 
 const BASE_URL = 'https://api.tmdb.org/3';
 const IMG_BASE = 'https://image.tmdb.org/t/p/';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://shitflix-backend.onrender.com';
 
 export const ImageSize = {
   BACKDROP_LARGE: 'original',
@@ -35,7 +36,6 @@ export function hasApiKey() {
 }
 
 export async function getMapping(tmdbId, mediaType) {
-  const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
   const res = await fetch(`${API_BASE_URL}/api/mapping/${mediaType}/${tmdbId}`);
   if (!res.ok) return null;
   return res.json();
@@ -156,9 +156,8 @@ export async function getSouthIndianMovies() {
  * Fetch the TMDB IDs that are present in the Telegram catalog.
  * Returns a Set of "type:id" strings for fast lookup.
  */
-export async function getCatalogIdSet() {
+export async function getAvailableCatalogIds() {
   try {
-    const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
     const res = await fetch(`${API_BASE_URL}/api/catalog/ids`);
     if (!res.ok) return new Set();
     const data = await res.json();

@@ -7,7 +7,7 @@ import {
   filterByCatalog,
 } from '../api.js';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const API_BASE = import.meta.env.VITE_API_URL || 'https://shitflix-backend.onrender.com';
 
 export async function renderHome(container) {
   container.innerHTML = '';

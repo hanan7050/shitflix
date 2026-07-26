@@ -1,14 +1,15 @@
 import Artplayer from 'artplayer';
 import '../styles/VideoPlayer.css';
+import { getMovieTitle, getTVTitle } from '../api.js';
 
 /* ============================================================
    Shitflix — Netflix-Accurate Video Player
    Supports: Web + Android TV (D-pad)
    ============================================================ */
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const API_BASE = import.meta.env.VITE_API_URL || 'https://shitflix-backend.onrender.com';
 
-export function createVideoPlayer(mediaId, mediaType, title, season = null, episode = null) {
+export function createVideoPlayer(mediaId, mediaType, tmdbTitle = null, initialSeason = null, initialEpisode = null) {
 
   // ── DOM Skeleton ──────────────────────────────────────────
   const page = document.createElement('div');
