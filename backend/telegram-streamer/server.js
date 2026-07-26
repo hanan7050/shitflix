@@ -69,6 +69,18 @@ async function initTelegram() {
     console.error("❌ Failed to connect to Telegram MTProto:", error.message || error);
     if (error.errorMessage === 'AUTH_KEY_DUPLICATED' || String(error).includes('AUTH_KEY_DUPLICATED')) {
       console.log("⚠️ Auth key duplicated. This happens during Render zero-downtime deploys. Retrying in 10 seconds...");
+      
+      // CRITICAL: We MUST disconnect the failed client to kill the zombie socket!
+      // Otherwise, Telegram still thinks this socket is holding the connection!
+      try {
+        if (client) {
+          await client.disconnect();
+          console.log("🧹 Cleaned up zombie socket.");
+        }
+      } catch (e) {
+        console.log("Error cleaning up socket:", e.message);
+      }
+      
       setTimeout(initTelegram, 10000);
     }
   }
