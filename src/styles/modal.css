@@ -1,0 +1,185 @@
+.sf-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  z-index: 200;
+  display: block;
+  padding-top: 2vh;
+  overflow-y: auto;
+  animation: sf-overlay-in 200ms ease;
+}
+
+@keyframes sf-overlay-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.sf-modal {
+  width: 95%;
+  max-width: 850px;
+  background: #181818;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.8);
+  margin: 0 auto 2vh auto;
+  animation: sf-modal-in 300ms ease;
+  position: relative;
+  text-align: left;
+}
+
+@keyframes sf-modal-in {
+  from { transform: scale(0.92); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.sf-modal-header {
+  position: relative;
+  height: 480px;
+  overflow: hidden;
+}
+
+.sf-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.sf-modal-header-gradient {
+  position: absolute;
+  inset: 0;
+  background: 
+    linear-gradient(to right, rgba(24, 24, 24, 0.8) 0%, rgba(24, 24, 24, 0) 50%),
+    linear-gradient(to top, #181818 0%, rgba(24, 24, 24, 0.8) 20%, rgba(24, 24, 24, 0) 60%);
+}
+
+.sf-modal-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #181818;
+  border: none;
+  color: white;
+  font-size: 18px;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 150ms;
+}
+
+.sf-modal-close:hover {
+  transform: scale(1.1);
+}
+
+.sf-modal-header-content {
+  position: absolute;
+  bottom: 40px;
+  left: 40px;
+  right: 40px;
+  z-index: 2;
+}
+
+.sf-modal-title {
+  font-size: 2.4rem;
+  font-weight: 800;
+  margin-bottom: 16px;
+  text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+}
+
+.sf-modal-header-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.sf-modal-body {
+  padding: 0 40px 40px;
+  display: grid;
+  grid-template-columns: 65% 1fr;
+  gap: 32px;
+}
+
+.sf-modal-meta {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.sf-modal-description {
+  font-size: 0.9rem;
+  color: #d2d2d2;
+  line-height: 1.7;
+  margin-bottom: 20px;
+}
+
+.sf-modal-sidebar {
+  font-size: 0.85rem;
+  color: #777;
+}
+
+.sf-modal-sidebar strong {
+  color: #999;
+}
+
+.sf-modal-sidebar-section {
+  margin-bottom: 12px;
+}
+
+.sf-modal-similar {
+  grid-column: 1 / -1;
+  margin-top: 24px;
+}
+
+.sf-modal-similar-title {
+  font-size: 1.3rem;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+.sf-modal-similar-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.sf-modal-similar-card {
+  background: #2f2f2f;
+  border-radius: 4px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 200ms;
+  position: relative;
+}
+
+.sf-modal-similar-card:hover {
+  transform: scale(1.03);
+}
+
+.sf-modal-similar-card img {
+  width: 100%;
+  aspect-ratio: 16/9;
+  object-fit: cover;
+}
+
+.sf-modal-similar-card-info {
+  padding: 12px;
+}
+
+@media (max-width: 768px) {
+  .sf-modal-body {
+    grid-template-columns: 1fr;
+  }
+  .sf-modal-header {
+    height: 300px;
+  }
+  .sf-modal-title {
+    font-size: 1.5rem;
+  }
+}

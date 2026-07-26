@@ -1,0 +1,64 @@
+.sf-search-page {
+  padding: 80px var(--sf-side-padding) 40px;
+}
+
+.sf-search-heading {
+  font-size: 1.1rem;
+  color: #808080;
+  margin-bottom: 24px;
+}
+
+.sf-search-heading strong {
+  color: white;
+}
+
+.sf-search-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 8px;
+}
+
+.sf-search-empty {
+  text-align: center;
+  padding: 80px 20px;
+  color: #808080;
+}
+
+.sf-search-empty h2 {
+  font-size: 1.5rem;
+  color: white;
+  margin-bottom: 12px;
+}
+
+.sf-search-empty p {
+  max-width: 500px;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+
+.sf-search-result-card {
+  border-radius: 4px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 200ms;
+}
+
+.sf-search-result-card:hover {
+  transform: scale(1.05);
+}
+
+.sf-search-result-card img {
+  width: 100%;
+  aspect-ratio: 2/3;
+  object-fit: cover;
+  background: #2f2f2f;
+}
+
+.sf-search-result-card-title {
+  padding: 8px;
+  font-size: 0.8rem;
+  color: #ccc;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

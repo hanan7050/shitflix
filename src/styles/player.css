@@ -1,0 +1,85 @@
+/* Player page — layout managed by VideoPlayer.css (position:fixed, full viewport) */
+/* This file only holds helper overrides used by the Player page shell */
+
+.sf-artplayer-container video {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
+}
+
+.sf-player-no-trailer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 24px;
+  color: #999;
+  position: absolute;
+  inset: 0;
+  background: #000;
+  z-index: 100;
+}
+
+.sf-player-no-trailer svg {
+  opacity: 0.3;
+}
+
+/* Hide the navbar while player is open */
+.sf-nav-hidden {
+  display: none !important;
+}
+
+/* Make the main content area not clip the fixed player */
+.sf-main-content:has(> .sf-player-page) {
+  overflow: visible;
+}
+
+/* Server switcher bar */
+.sf-server-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);
+}
+
+.sf-server-label {
+  font-size: 0.85rem;
+  color: #888;
+  margin-right: 4px;
+}
+
+.sf-server-btn {
+  padding: 6px 16px;
+  border-radius: 6px;
+  border: 1px solid rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.06);
+  color: #ccc;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all 200ms;
+}
+
+.sf-server-btn:hover {
+  background: rgba(255,255,255,0.12);
+  color: white;
+}
+
+.sf-server-btn.active {
+  background: rgba(229, 9, 20, 0.8);
+  border-color: rgba(229, 9, 20, 0.9);
+  color: white;
+  font-weight: 600;
+}
+
+.sf-player-back-btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px #e50914;
+  border-radius: 4px;
+}

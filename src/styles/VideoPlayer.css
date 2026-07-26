@@ -1,0 +1,695 @@
+/* ============================================================
+   SHITFLIX — Netflix-Accurate Video Player
+   Supports: Web + Android TV (D-pad navigation)
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Netflix+Sans:wght@400;500;700&display=swap');
+
+/* ── Nuke every default Artplayer UI element ── */
+.art-bottom,
+.art-progress,
+.art-controls,
+.art-notice,
+.art-setting,
+.art-contextmenus,
+.art-layer-mini-progress-bar,
+.art-mask,
+.art-subtitle,
+.art-danmuku,
+.art-info,
+.art-layers > *:not(.sf-netflix-ui-layer) {
+  display: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
+}
+
+/* ── Page & Container ── */
+.sf-player-page {
+  position: fixed;
+  inset: 0;
+  background: #000;
+  z-index: 9000;
+  font-family: 'Netflix Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+
+.sf-player-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #000;
+}
+
+.sf-artplayer-container {
+  position: absolute;
+  inset: 0;
+  background: #000;
+}
+
+/* ── Loading Screen ── */
+.sf-player-loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #000;
+  z-index: 100;
+  gap: 16px;
+}
+
+.sf-loading-spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid rgba(255,255,255,0.15);
+  border-top-color: #e50914;
+  border-radius: 50%;
+  animation: sf-spin 0.8s linear infinite;
+}
+
+@keyframes sf-spin {
+  to { transform: rotate(360deg); }
+}
+
+.sf-loading-text {
+  color: white;
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.sf-loading-sub {
+  color: rgba(255,255,255,0.5);
+  font-size: 0.8rem;
+}
+
+/* ── Error Screen ── */
+.sf-player-no-trailer {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #000;
+  color: white;
+  text-align: center;
+  gap: 12px;
+  padding: 40px;
+  z-index: 100;
+}
+
+/* ============================================================
+   NETFLIX PLAYER UI OVERLAY
+   ============================================================ */
+
+.sf-netflix-ui {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  z-index: 9999;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sf-netflix-ui.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ── Top Gradient + Bar ── */
+.sf-netflix-top-bar {
+  display: flex;
+  align-items: center;
+  padding: 28px 40px 80px;
+  background: linear-gradient(
+    180deg,
+    rgba(0,0,0,0.85) 0%,
+    rgba(0,0,0,0.4) 60%,
+    transparent 100%
+  );
+  flex-shrink: 0;
+}
+
+.sf-netflix-back-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: transparent;
+  border: none;
+  color: white;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  transition: transform 0.15s ease;
+  outline: none;
+}
+
+.sf-netflix-back-btn svg {
+  fill: white;
+  width: 28px;
+  height: 28px;
+  filter: drop-shadow(0 1px 3px rgba(0,0,0,0.8));
+  transition: transform 0.15s ease;
+}
+
+.sf-netflix-back-btn:hover svg,
+.sf-netflix-back-btn:focus svg {
+  transform: scale(1.15);
+}
+
+.sf-netflix-back-btn:focus {
+  box-shadow: 0 0 0 2px white;
+  border-radius: 4px;
+}
+
+.sf-netflix-header-title {
+  color: white;
+  font-size: 1rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  margin-left: 16px;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.9);
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Bottom Gradient + Bar ── */
+.sf-netflix-bottom-bar {
+  padding: 80px 40px 24px;
+  background: linear-gradient(
+    0deg,
+    rgba(0,0,0,0.9) 0%,
+    rgba(0,0,0,0.5) 60%,
+    transparent 100%
+  );
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* ── Progress / Timeline ── */
+.sf-netflix-timeline-wrapper {
+  width: 100%;
+  padding: 12px 0;
+  cursor: pointer;
+  position: relative;
+}
+
+.sf-netflix-timeline-wrapper:focus {
+  outline: none;
+}
+
+.sf-netflix-timeline-track {
+  width: 100%;
+  height: 3px;
+  background: rgba(255,255,255,0.3);
+  border-radius: 2px;
+  position: relative;
+  transition: height 0.18s cubic-bezier(0.4, 0, 0.2, 1),
+              background 0.18s ease;
+}
+
+.sf-netflix-timeline-wrapper:hover .sf-netflix-timeline-track,
+.sf-netflix-timeline-wrapper:focus .sf-netflix-timeline-track {
+  height: 5px;
+}
+
+.sf-netflix-timeline-buffered {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  background: rgba(255,255,255,0.4);
+  border-radius: 2px;
+  width: 0%;
+  pointer-events: none;
+}
+
+.sf-netflix-timeline-progress {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  background: #e50914;
+  border-radius: 2px;
+  width: 0%;
+  pointer-events: none;
+  transition: width 0.1s linear;
+}
+
+.sf-netflix-timeline-thumb {
+  position: absolute;
+  right: -7px;
+  top: 50%;
+  transform: translateY(-50%) scale(0);
+  width: 13px;
+  height: 13px;
+  background: #e50914;
+  border-radius: 50%;
+  pointer-events: none;
+  transition: transform 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 0 6px rgba(229,9,20,0.8);
+}
+
+.sf-netflix-timeline-wrapper:hover .sf-netflix-timeline-thumb,
+.sf-netflix-timeline-wrapper:focus .sf-netflix-timeline-thumb {
+  transform: translateY(-50%) scale(1);
+}
+
+/* Timestamp preview tooltip */
+.sf-netflix-time-tooltip {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  transform: translateX(-50%);
+  background: rgba(0,0,0,0.9);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 3px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.sf-netflix-timeline-wrapper:hover .sf-netflix-time-tooltip {
+  opacity: 1;
+}
+
+/* ── Controls Row ── */
+.sf-netflix-controls-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 4px;
+}
+
+.sf-netflix-controls-left,
+.sf-netflix-controls-right {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ── Generic Button ── */
+.sf-nf-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: white;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 4px;
+  outline: none;
+  transition: transform 0.12s ease, background 0.12s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.sf-nf-btn svg {
+  fill: white;
+  display: block;
+  filter: drop-shadow(0 1px 3px rgba(0,0,0,0.6));
+}
+
+.sf-nf-btn:hover {
+  transform: scale(1.1);
+}
+
+/* Android TV / Keyboard focus ring */
+.sf-nf-btn:focus {
+  box-shadow: 0 0 0 2px rgba(255,255,255,0.9);
+  background: rgba(255,255,255,0.1);
+  transform: scale(1.1);
+}
+
+/* ── Volume Button + Slider ── */
+.sf-nf-volume-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 4px;
+}
+
+.sf-nf-volume-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 0;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255,255,255,0.4);
+  outline: none;
+  cursor: pointer;
+  overflow: hidden;
+  transition: width 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sf-nf-volume-wrap:hover .sf-nf-volume-slider,
+.sf-nf-volume-wrap:focus-within .sf-nf-volume-slider {
+  width: 80px;
+}
+
+.sf-nf-volume-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 0;
+  height: 0;
+}
+
+/* ── Time Display ── */
+.sf-nf-time {
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: rgba(255,255,255,0.9);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  padding: 0 6px;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+  user-select: none;
+}
+
+/* ── Title in Bottom Bar (Netflix style — below controls on TV) ── */
+.sf-nf-title-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.sf-nf-series-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.7);
+}
+
+.sf-nf-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: white;
+  text-shadow: 0 1px 5px rgba(0,0,0,0.9);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Center Play/Pause Ripple ── */
+.sf-nf-center-anim {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 60;
+  opacity: 0;
+}
+
+.sf-nf-center-anim .sf-nf-ripple-circle {
+  position: absolute;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.25);
+}
+
+.sf-nf-center-anim svg {
+  fill: white;
+  width: 44px;
+  height: 44px;
+  position: relative;
+  z-index: 1;
+  filter: drop-shadow(0 2px 8px rgba(0,0,0,0.6));
+}
+
+@keyframes sf-ripple-out {
+  0%   { transform: translate(-50%, -50%) scale(0.7); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(1.6); opacity: 0; }
+}
+
+@keyframes sf-center-fade {
+  0%   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  70%  { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(0.85); }
+}
+
+.sf-nf-center-anim.playing {
+  animation: sf-center-fade 0.7s ease-out forwards;
+}
+
+.sf-nf-center-anim.paused {
+  animation: sf-center-fade 0.7s ease-out forwards;
+}
+
+.sf-nf-center-anim .sf-nf-ripple-circle {
+  animation: sf-ripple-out 0.7s ease-out forwards;
+}
+
+/* ── Skip +10 / -10 animation ── */
+@keyframes sf-seek-flash {
+  0%   { opacity: 0.8; }
+  100% { opacity: 0; }
+}
+
+.sf-nf-seek-flash {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 30%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 55;
+  opacity: 0;
+  border-radius: 0 50% 50% 0;
+}
+
+.sf-nf-seek-flash.left {
+  left: 0;
+  border-radius: 50% 0 0 50%;
+  background: radial-gradient(ellipse at left, rgba(255,255,255,0.15) 0%, transparent 70%);
+}
+
+.sf-nf-seek-flash.right {
+  right: 0;
+  background: radial-gradient(ellipse at right, rgba(255,255,255,0.15) 0%, transparent 70%);
+}
+
+.sf-nf-seek-flash.active {
+  animation: sf-seek-flash 0.5s ease-out forwards;
+}
+
+.sf-nf-seek-flash .sf-nf-seek-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  color: white;
+}
+
+.sf-nf-seek-flash svg {
+  fill: white;
+  width: 36px;
+  height: 36px;
+}
+
+.sf-nf-seek-flash span {
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.9);
+}
+
+/* ============================================================
+   SETTINGS PANEL — Netflix-style right drawer
+   ============================================================ */
+
+.sf-settings-panel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: min(380px, 90vw);
+  height: 100%;
+  background: rgba(20, 20, 20, 0.97);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  z-index: 10000;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow-y: auto;
+}
+
+.sf-settings-panel.open {
+  transform: translateX(0);
+}
+
+.sf-settings-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px 24px 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  flex-shrink: 0;
+}
+
+.sf-settings-header h2 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: white;
+  margin: 0;
+}
+
+.sf-settings-close-btn {
+  background: transparent;
+  border: none;
+  color: white;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  outline: none;
+  transition: background 0.15s;
+}
+
+.sf-settings-close-btn:hover,
+.sf-settings-close-btn:focus {
+  background: rgba(255,255,255,0.15);
+  box-shadow: 0 0 0 2px rgba(255,255,255,0.7);
+}
+
+.sf-settings-close-btn svg {
+  fill: white;
+  width: 20px;
+  height: 20px;
+}
+
+.sf-settings-section {
+  padding: 16px 24px;
+}
+
+.sf-settings-section + .sf-settings-section {
+  border-top: 1px solid rgba(255,255,255,0.07);
+}
+
+.sf-settings-section h3 {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.5);
+  margin: 0 0 12px;
+}
+
+.sf-settings-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 14px;
+  margin-bottom: 4px;
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 6px;
+  color: white;
+  cursor: pointer;
+  text-align: left;
+  font-size: 0.88rem;
+  font-family: inherit;
+  outline: none;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.sf-settings-item:hover {
+  background: rgba(255,255,255,0.1);
+  border-color: rgba(255,255,255,0.2);
+}
+
+.sf-settings-item:focus {
+  background: rgba(255,255,255,0.12);
+  border-color: rgba(255,255,255,0.6);
+  box-shadow: 0 0 0 2px rgba(255,255,255,0.4);
+}
+
+.sf-settings-item.active {
+  background: rgba(229, 9, 20, 0.15);
+  border-color: #e50914;
+  color: white;
+}
+
+.sf-settings-item.active .sf-settings-item-check {
+  opacity: 1;
+}
+
+.sf-settings-item-label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  line-height: 1.3;
+  word-break: break-all;
+  padding-right: 12px;
+}
+
+.sf-settings-item-sublabel {
+  display: block;
+  font-size: 0.73rem;
+  color: rgba(255,255,255,0.45);
+  margin-top: 2px;
+}
+
+.sf-settings-item-check {
+  width: 18px;
+  height: 18px;
+  background: #e50914;
+  border-radius: 50%;
+  flex-shrink: 0;
+  opacity: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.15s;
+}
+
+.sf-settings-item-check::after {
+  content: '';
+  width: 6px;
+  height: 10px;
+  border-right: 2px solid white;
+  border-bottom: 2px solid white;
+  transform: rotate(45deg) translateY(-2px);
+}
+
+/* ── Responsive: Android TV / large screens ── */
+@media (min-width: 960px) {
+  .sf-netflix-top-bar { padding: 32px 56px 80px; }
+  .sf-netflix-bottom-bar { padding: 80px 56px 28px; }
+  .sf-nf-btn svg { width: 26px; height: 26px; }
+  .sf-nf-time { font-size: 0.88rem; }
+}
+
+/* Small screen adjustments */
+@media (max-width: 600px) {
+  .sf-netflix-top-bar { padding: 16px 20px 60px; }
+  .sf-netflix-bottom-bar { padding: 60px 20px 16px; }
+  .sf-nf-title { font-size: 0.9rem; }
+}

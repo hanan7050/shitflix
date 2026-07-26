@@ -1,0 +1,108 @@
+.sf-row {
+  margin-bottom: 2vw;
+  position: relative;
+  transition: z-index 0ms 400ms;
+}
+
+.sf-row:hover {
+  z-index: 50;
+  transition-delay: 0ms;
+}
+
+.sf-row-header {
+  padding: 0 var(--sf-side-padding, 4%);
+  margin-bottom: 8px;
+}
+
+.sf-row-title {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #e5e5e5;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.sf-row-title:hover .sf-row-explore {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.sf-row-explore {
+  opacity: 0;
+  transform: translateX(-10px);
+  transition: all 150ms;
+  color: #E50914;
+  font-size: 0.8rem;
+}
+
+.sf-row-container {
+  position: relative;
+  overflow: visible;
+}
+
+.sf-row-slider-wrap {
+  overflow-x: clip;
+  overflow-y: visible;
+  padding: 0 4%;
+}
+
+.sf-row-scroller {
+  display: flex;
+  gap: 5px;
+  overflow: visible;
+  transition: transform 0.5s ease-in-out;
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.sf-row-scroller::-webkit-scrollbar {
+  display: none;
+}
+/* Hide scrollbar for IE, Edge and Firefox */
+.sf-row-scroller {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+
+
+.sf-row-arrow {
+  position: absolute;
+  top: 0;
+  bottom: 80px;
+  width: 55px;
+  z-index: 15;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(20,20,20,0.6);
+  border: none;
+  color: white;
+  font-size: 2rem;
+  opacity: 0;
+  transition: opacity 200ms;
+  cursor: pointer;
+}
+
+.sf-row:hover .sf-row-arrow {
+  opacity: 1;
+}
+
+.sf-row-arrow:hover {
+  background: rgba(20,20,20,0.9);
+}
+
+.sf-row-arrow--left {
+  left: 0;
+  border-radius: 0 4px 4px 0;
+}
+
+.sf-row-arrow--right {
+  right: 0;
+  border-radius: 4px 0 0 4px;
+}
+
+.sf-row-arrow.sf-hidden {
+  display: none;
+}
