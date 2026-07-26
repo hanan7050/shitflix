@@ -30,7 +30,11 @@ async function initTelegram() {
     await client.connect();
     console.log("✅ Connected to Telegram MTProto!");
   } catch (error) {
-    console.error("❌ Failed to connect to Telegram MTProto:", error);
+    console.error("❌ Failed to connect to Telegram MTProto:", error.message || error);
+    if (error.errorMessage === 'AUTH_KEY_DUPLICATED' || String(error).includes('AUTH_KEY_DUPLICATED')) {
+      console.log("⚠️ Auth key duplicated. This happens during Render zero-downtime deploys. Retrying in 10 seconds...");
+      setTimeout(initTelegram, 10000);
+    }
   }
 }
 
