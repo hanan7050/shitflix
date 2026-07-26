@@ -1,6 +1,8 @@
 import { createHeroBanner } from '../components/HeroBanner.js';
 import { createContentRow } from '../components/ContentRow.js';
 
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
 export async function renderMovies(container) {
   container.innerHTML = '';
   
@@ -29,7 +31,7 @@ export async function renderMovies(container) {
   let heroCleanup = null;
 
   try {
-    const localRes = await fetch('http://localhost:3000/api/catalog').catch(() => ({ ok: false }));
+    const localRes = await fetch(`${API_BASE}/api/catalog`).catch(() => ({ ok: false }));
 
     let localLibrary = [];
     if (localRes && localRes.ok) {

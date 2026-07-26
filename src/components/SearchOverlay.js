@@ -1,5 +1,7 @@
 import { getImageUrl, ImageSize, getTitle, getMediaType } from '../api.js';
 
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
 export function createSearchResults(query) {
   const container = document.createElement('div');
   container.className = 'sf-search-page sf-page';
@@ -22,8 +24,7 @@ export function createSearchResults(query) {
     skel.innerHTML = '<div style="width: 100%; aspect-ratio: 2/3; background: #2f2f2f; animation: pulse 1.5s infinite"></div>';
     grid.appendChild(skel);
   }
-
-  fetch('http://localhost:3000/api/catalog')
+  fetch(`${API_BASE}/api/catalog`)
     .then(res => res.json())
     .then(data => {
       grid.innerHTML = '';

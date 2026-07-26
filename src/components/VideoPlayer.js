@@ -6,6 +6,8 @@ import '../styles/VideoPlayer.css';
    Supports: Web + Android TV (D-pad)
    ============================================================ */
 
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
 export function createVideoPlayer(mediaId, mediaType, title, season = null, episode = null) {
 
   // ── DOM Skeleton ──────────────────────────────────────────
@@ -73,7 +75,7 @@ export function createVideoPlayer(mediaId, mediaType, title, season = null, epis
 
   const getStreamUrl = (startTime = 0) => {
     const endpoint = (isMKV() || forceTranscode) ? 'transcode' : 'stream';
-    let url = `http://localhost:3000/api/${endpoint}/${mediaType}/${mediaId}?sourceIndex=${selectedSourceIndex}`;
+    let url = `${API_BASE}/api/${endpoint}/${mediaType}/${mediaId}?sourceIndex=${selectedSourceIndex}`;
     if (endpoint === 'transcode' && selectedAudioTrack !== 0) url += `&audioTrack=${selectedAudioTrack}`;
     if (endpoint === 'transcode' && startTime > 0) url += `&start=${startTime}`;
     if (mediaType === 'tv' && season && episode) url += `&season=${season}&episode=${episode}`;
@@ -525,7 +527,7 @@ export function createVideoPlayer(mediaId, mediaType, title, season = null, epis
 
   // ── fetchAudioTracks ──────────────────────────────────────
   const fetchAudioTracks = () => {
-    let url = `http://localhost:3000/api/probe/${mediaType}/${mediaId}?sourceIndex=${selectedSourceIndex}`;
+    let url = `${API_BASE}/api/probe/${mediaType}/${mediaId}?sourceIndex=${selectedSourceIndex}`;
     if (mediaType === 'tv' && season && episode) url += `&season=${season}&episode=${episode}`;
 
     fetch(url)
@@ -556,7 +558,7 @@ export function createVideoPlayer(mediaId, mediaType, title, season = null, epis
     playerContainer.style.display = 'none';
     errorEl.style.display = 'none';
 
-    fetch(`http://localhost:3000/api/stream/${mediaType}/${mediaId}?sourceIndex=${selectedSourceIndex}`, { method: 'HEAD' })
+    fetch(`${API_BASE}/api/stream/${mediaType}/${mediaId}?sourceIndex=${selectedSourceIndex}`, { method: 'HEAD' })
       .then(res => {
         if (!res.ok) throw new Error('Stream not found in your Telegram channel.');
 
@@ -623,7 +625,7 @@ export function createVideoPlayer(mediaId, mediaType, title, season = null, epis
   };
 
   // ── Bootstrap ─────────────────────────────────────────────
-  fetch(`http://localhost:3000/api/mapping/${mediaType}/${mediaId}`)
+  fetch(`${API_BASE}/api/mapping/${mediaType}/${mediaId}`)
     .then(r => r.json())
     .then(mapping => {
       if (mapping && mapping.sources && mapping.sources.length > 0) {

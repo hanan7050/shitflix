@@ -7,6 +7,8 @@ import {
   filterByCatalog,
 } from '../api.js';
 
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
 export async function renderHome(container) {
   container.innerHTML = '';
   
@@ -30,7 +32,7 @@ export async function renderHome(container) {
   try {
     // Fetch local catalog + catalog ID set in parallel
     const [localRes, catalogIdSet] = await Promise.all([
-      fetch('http://localhost:3000/api/catalog').catch(() => ({ ok: false })),
+      fetch(`${API_BASE}/api/catalog`).catch(() => ({ ok: false })),
       getCatalogIdSet(),
     ]);
 
