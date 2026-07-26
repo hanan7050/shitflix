@@ -332,12 +332,26 @@ export function createVideoPlayer(mediaId, mediaType, title, season = null, epis
   };
 
   // ── Timeline scrubbing ────────────────────────────────────
+  const performSeek = (targetTime) => {
+    if (!art) return;
+    if (getStreamUrl().includes('transcode')) {
+      loading.style.display = 'flex';
+      art.switchUrl(getStreamUrl(targetTime));
+      art.once('video:canplay', () => {
+        loading.style.display = 'none';
+        art.play();
+      });
+    } else {
+      art.currentTime = targetTime;
+    }
+  };
+
   const scrubAt = (clientX) => {
     if (!art) return;
     const rect = nfTimeline.getBoundingClientRect();
     const pct = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
     const dur = realDuration || art.duration || 0;
-    art.currentTime = pct * dur;
+    performSeek(pct * dur);
   };
 
   nfTimeline.addEventListener('mousemove', (e) => {
@@ -377,7 +391,8 @@ export function createVideoPlayer(mediaId, mediaType, title, season = null, epis
   const seekBy = (amount) => {
     if (!art) return;
     const dur = realDuration || art.duration || 0;
-    art.currentTime = Math.max(0, Math.min(dur, (art.currentTime || 0) + amount));
+    const target = Math.max(0, Math.min(dur, (art.currentTime || 0) + amount));
+    performSeek(target);
     flashSeek(amount > 0 ? 'right' : 'left');
     showUI();
   };
