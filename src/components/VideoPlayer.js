@@ -16,7 +16,7 @@ export function createVideoPlayer(mediaId, mediaType, title, season = null, epis
   // Force full-screen coverage via inline styles (belt + suspenders)
   Object.assign(page.style, {
     position: 'fixed', top: '0', left: '0', right: '0', bottom: '0',
-    width: '100vw', height: '100vh', background: '#000', zIndex: '9000',
+    width: '100%', height: '100%', background: '#000', zIndex: '9000',
     fontFamily: "'Netflix Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif"
   });
 

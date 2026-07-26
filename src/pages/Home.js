@@ -44,19 +44,7 @@ export async function renderHome(container) {
 
     page.innerHTML = '';
     
-    // Helper: check if item was released recently (last 3 months)
-    const threeMonthsAgo = new Date();
-    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
-    const minDateStr = threeMonthsAgo.toISOString().split('T')[0];
-
-    const isRecent = (item) => {
-      const date = item.release_date || item.first_air_date;
-      return date && date >= minDateStr;
-    };
-
-    // Filter local library so the ENTIRE home page only shows recent releases
-    localLibrary = localLibrary.filter(isRecent);
-
+    // Show all available content
     if (localLibrary.length === 0) {
       page.innerHTML = '<div style="padding:100px;text-align:center;color:white"><h2>No Recent Content</h2><p>Check back later for new releases.</p></div>';
       return () => {};
