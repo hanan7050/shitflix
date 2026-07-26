@@ -243,6 +243,40 @@ app.get('/api/audio/:mediaType/:tmdbId', (req, res) => {
   });
 });
 
+app.get('/api/subtitle/:mediaType/:tmdbId', (req, res) => {
+  const { mediaType, tmdbId } = req.params;
+  const sourceIndex = req.query.sourceIndex || 0;
+  const trackIndex = req.query.trackIndex || 0;
+  const season = req.query.season;
+  const episode = req.query.episode;
+  
+  const PORT = process.env.PORT || 3000;
+  let streamUrl = `http://127.0.0.1:${PORT}/api/stream/${mediaType}/${tmdbId}?sourceIndex=${sourceIndex}`;
+  if (mediaType === 'tv' && season && episode) {
+    streamUrl += `&season=${season}&episode=${episode}`;
+  }
+  
+  let ffmpegArgs = [
+    '-i', streamUrl,
+    '-map', `0:${trackIndex}`,
+    '-c:s', 'webvtt',
+    '-f', 'webvtt',
+    'pipe:1'
+  ];
+  
+  res.setHeader('Content-Type', 'text/vtt');
+  const ffmpegProcess = spawn(ffmpegPath, ffmpegArgs);
+  ffmpegProcess.stdout.pipe(res);
+  
+  ffmpegProcess.stderr.on('data', (data) => {
+    // console.log(`[ffmpeg sub] ${data}`);
+  });
+  
+  req.on('close', () => {
+    ffmpegProcess.kill('SIGKILL');
+  });
+});
+
 app.get('/api/transcode/:mediaType/:tmdbId', (req, res) => {
   const { mediaType, tmdbId } = req.params;
   const sourceIndex = req.query.sourceIndex || 0;

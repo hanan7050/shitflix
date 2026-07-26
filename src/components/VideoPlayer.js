@@ -54,8 +54,10 @@ export function createVideoPlayer(mediaId, mediaType, title, season = null, epis
   let art = null;
   let selectedSourceIndex = 0;
   let selectedAudioTrack = 0;
+  let selectedSubtitleTrack = null;
   let sourcesList = [];
   let audioTracks = [];
+  let subtitleTracks = [];
   let realDuration = 0;
   let forceTranscode = false;
   let uiTimer = null;
@@ -458,10 +460,50 @@ export function createVideoPlayer(mediaId, mediaType, title, season = null, epis
         btn.addEventListener('click', () => {
           selectedAudioTrack = track.index;
           forceTranscode = true;
-          const t = art ? (art.currentTime || 0) : 0;
-          art.switchUrl(getStreamUrl(t));
+          const ct = art ? art.currentTime : 0;
+          art.switchUrl(getStreamUrl(ct));
           closeSettings();
           art.play();
+        });
+        sec.appendChild(btn);
+      });
+      settingsPanel.appendChild(sec);
+    }
+
+    if (subtitleTracks.length > 0) {
+      const sec = document.createElement('div');
+      sec.className = 'sf-settings-section';
+      sec.innerHTML = '<h3>Subtitles</h3>';
+      
+      const noneBtn = document.createElement('button');
+      noneBtn.className = `sf-settings-item${selectedSubtitleTrack === null ? ' active' : ''}`;
+      noneBtn.innerHTML = `<div class="sf-settings-item-label">None</div><div class="sf-settings-item-check"></div>`;
+      noneBtn.addEventListener('click', () => {
+         selectedSubtitleTrack = null;
+         if (art) { art.subtitle.show = false; }
+         buildSettings();
+      });
+      sec.appendChild(noneBtn);
+
+      subtitleTracks.forEach(track => {
+        const btn = document.createElement('button');
+        btn.className = `sf-settings-item${selectedSubtitleTrack === track.index ? ' active' : ''}`;
+        btn.innerHTML = `
+          <div class="sf-settings-item-label">
+            ${track.language || 'Unknown'}
+            <span class="sf-settings-item-sublabel">${track.title || track.codec || ''}</span>
+          </div>
+          <div class="sf-settings-item-check"></div>
+        `;
+        btn.addEventListener('click', () => {
+          selectedSubtitleTrack = track.index;
+          let subUrl = `${API_BASE}/api/subtitle/${mediaType}/${mediaId}?sourceIndex=${selectedSourceIndex}&trackIndex=${track.index}`;
+          if (mediaType === 'tv' && season && episode) subUrl += `&season=${season}&episode=${episode}`;
+          if (art) {
+            art.subtitle.url = subUrl;
+            art.subtitle.show = true;
+          }
+          buildSettings();
         });
         sec.appendChild(btn);
       });
@@ -550,6 +592,10 @@ export function createVideoPlayer(mediaId, mediaType, title, season = null, epis
       .then(data => {
         if (data && data.duration) realDuration = data.duration;
 
+        if (data && data.subtitles) {
+          subtitleTracks = data.subtitles;
+        }
+
         if (data && data.tracks) {
           audioTracks = data.tracks;
 
@@ -599,6 +645,15 @@ export function createVideoPlayer(mediaId, mediaType, title, season = null, epis
             controls: [],
             layers: [],
             settings: [],
+            subtitle: {
+              url: '',
+              type: 'vtt',
+              style: {
+                color: '#fff',
+                fontSize: '32px',
+                textShadow: '0 0 4px #000, 0 0 8px #000'
+              },
+            },
             theme: '#e50914',
           });
 
