@@ -1,6 +1,5 @@
 import Artplayer from 'artplayer';
 import '../styles/VideoPlayer.css';
-import { getMovieTitle, getTVTitle } from '../api.js';
 
 /* ============================================================
    Shitflix — Netflix-Accurate Video Player

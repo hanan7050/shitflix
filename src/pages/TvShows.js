@@ -1,8 +1,6 @@
 import { createHeroBanner } from '../components/HeroBanner.js';
 import { createContentRow } from '../components/ContentRow.js';
 
-import { createContentRow } from '../components/ContentRow.js';
-
 const API_BASE = import.meta.env.VITE_API_URL || 'https://shitflix-backend.onrender.com';
 
 export async function renderTvShows(container) {

@@ -156,7 +156,7 @@ export async function getSouthIndianMovies() {
  * Fetch the TMDB IDs that are present in the Telegram catalog.
  * Returns a Set of "type:id" strings for fast lookup.
  */
-export async function getAvailableCatalogIds() {
+export async function getCatalogIdSet() {
   try {
     const res = await fetch(`${API_BASE_URL}/api/catalog/ids`);
     if (!res.ok) return new Set();

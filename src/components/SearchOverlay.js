@@ -4,7 +4,7 @@ import { createMovieCard } from './MovieCard.js';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'https://shitflix-backend.onrender.com';
 
-export function createSearchOverlay(query) {
+export function createSearchResults(query) {
   const container = document.createElement('div');
   container.className = 'sf-search-page sf-page';
   
